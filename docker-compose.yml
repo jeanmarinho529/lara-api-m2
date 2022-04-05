@@ -1,0 +1,67 @@
+version: "3"
+
+services:
+
+  api:
+    build:
+      context: ./deploy/docker-local/
+    container_name: api
+    restart: always
+    environment:
+      TZ: America/Sao_Paulo
+      LANG: pt_BR.UTF-8
+      LANGUAGE: pt_BR.UTF-8
+      LC_CTYPE: pt_BR.UTF-8
+      LC_ALL: pt_BR.UTF-8
+      LC_TIME: pt_BR.UTF-8
+    depends_on:
+      - redis
+    volumes:
+      - ./:/var/www/html
+    networks:
+      - app-network
+
+  redis:
+    container_name: redis
+    image: 'redis:6-alpine'
+    restart: always
+    command: redis-server
+    ports:
+      - '6378:6378'
+    networks:
+      - app-network
+
+  nginx:
+    image: nginx
+    container_name: nginx
+    restart: always
+    tty: true
+    ports:
+      - "81:80"
+    volumes:
+      - ./:/var/www/html/
+      - ./deploy/docker-local/nginx/:/etc/nginx/conf.d/
+    depends_on:
+      - api
+    networks:
+      - app-network
+
+  mysql:
+    image: mysql:5.7.22
+    container_name: mysql
+    expose:
+      - "3307"
+    ports:
+      - "3307:3307"
+    volumes:
+      - ../Documents/.docker/dbdata:/var/lib/mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: laravel
+      MYSQL_DATABASE: laravel
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
